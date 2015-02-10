@@ -122,12 +122,35 @@ void putfont8(char *vram, int xsize, int x, int y, char color, unsigned char *fo
 	return;
 }
 
-void putfont8_asc(char *vram, int xsize, int x, int y, char color, unsigned char *str){
+void putfonts8_asc(char *vram, int xsize, int x, int y, char color, unsigned char *str){
 	extern char hankanku[4096];
-	for(str ; *str != '\0'; str++){
+	for(; *str != '\0'; str++){
 		putfont8(vram, xsize, x, y, color, hankanku + *str * 16);
 		x += 8;
 	}
+	return;
+}
+
+
+void init_screen8(char *vram, int xsize, int ysize)
+{
+boxfill8(vram, xsize, col_blue_l_d, 0,           0         , xsize - 1, ysize - 29);
+	boxfill8(vram, xsize, col_gray,     0,           ysize - 28, xsize - 1, ysize - 28);
+	boxfill8(vram, xsize, col_white,    0,           ysize - 27, xsize - 1, ysize - 27);
+	boxfill8(vram, xsize, col_gray,     0,           ysize - 26, xsize - 1, ysize - 1 );
+
+	boxfill8(vram, xsize, col_white,    3,           ysize - 24, 59       , ysize - 24);
+	boxfill8(vram, xsize, col_white,    2,           ysize - 24, 2        , ysize - 4 );
+	boxfill8(vram, xsize, col_gray_d  , 3,           ysize - 4 , 59       , ysize - 4 );
+	boxfill8(vram, xsize, col_gray_d  ,59,           ysize - 23, 59       , ysize - 5 );
+	
+	boxfill8(vram, xsize, col_black   , 2,           ysize - 3 , 59       , ysize - 3 );
+	boxfill8(vram, xsize, col_black   ,60,           ysize - 24, 60       , ysize - 3 );
+
+	boxfill8(vram, xsize, col_gray_d  ,xsize - 47,   ysize - 24, xsize-4  , ysize - 24 );
+	boxfill8(vram, xsize, col_gray_d  ,xsize - 47,   ysize - 23, xsize-47 , ysize - 4  );
+	boxfill8(vram, xsize, col_white   ,xsize - 47,   ysize - 3 , xsize-4 ,  ysize - 3  );
+	boxfill8(vram, xsize, col_white   ,xsize - 3 ,   ysize - 23, xsize-3 ,  ysize - 3  );
 	return;
 }
 

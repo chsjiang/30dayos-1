@@ -49,9 +49,9 @@ asmfont.obj : asmfont.nas.font Makefile
 	$(NASK) asmfont.nas.font asmfont.obj asmfont.lst
 ####################################################################
 
-bootpack.bim : bootpack.obj naskfunc.obj asmfont.obj graphic.obj dsctbl.obj Makefile
+bootpack.bim : bootpack.obj naskfunc.obj asmfont.obj graphic.obj dsctbl.obj int.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:bootpack.bim stack:3136k map:bootpack.map \
-		bootpack.obj naskfunc.obj asmfont.obj graphic.obj dsctbl.obj
+		bootpack.obj naskfunc.obj asmfont.obj graphic.obj dsctbl.obj int.obj 
 # 3MB+64KB=3136KB
 
 bootpack.hrb : bootpack.bim Makefile
