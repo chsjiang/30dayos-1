@@ -2,6 +2,7 @@
 
 
 extern struct FIFO8 keyfifo;
+extern struct FIFO8 mousefifo;
 
 void init_pic(void)
 {
@@ -40,9 +41,11 @@ void inthandler21(int *esp)  //process keyboard int
 
 void inthandler2c(int *esp)		//process mouse int
 {
-	struct BOOTINFO *binfo = (struct BOOTINFO *) ADR_BOOTINFO;
-	boxfill8(binfo->vram, binfo->scrnx, COL8_000000, 0, 0, 32 * 8 - 1, 15);
-	putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_FFFFFF, "INT 2C (IRQ-12) : PS/2 mouse");
+	unsigned char data;
+	io_out8(PIC1_OCW2, 0x64);
+	io_out8(PIC0_OCW2, 0x62);
+	data=io_in8(PORT_KEYDAT);
+	fifo8_put(&mousefifo, data);
 	return;
 }
 

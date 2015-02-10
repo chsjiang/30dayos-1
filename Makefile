@@ -26,7 +26,7 @@ default :
 
 
 #一般规则
-%.gas : %.c Makefile
+%.gas : %.c %.h head.h Makefile
 	$(CC1) -o $*.gas $*.c
 
 %.nas : %.gas Makefile
