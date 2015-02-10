@@ -1,5 +1,8 @@
 #include "head.h"
 
+
+extern struct FIFO8 keyfifo;
+
 void init_pic(void)
 {
 	io_out8(PIC0_IMR, 0xff);
@@ -18,19 +21,20 @@ void init_pic(void)
 	io_out8(PIC0_IMR, 0xfb);
 	io_out8(PIC1_IMR, 0xff);
 
+	// keybuf.next_r = keybuf.next_w = keybuf.len = 0;
+
 	return;
 }
 
+
+
 void inthandler21(int *esp)  //process keyboard int
 {
-	struct BOOTINFO *binfo = (struct BOOTINFO *) ADR_BOOTINFO;
-	unsigned char data, s[4];
+	unsigned char data;
 	io_out8(PIC0_OCW2, 0x61);
 	data=io_in8(PORT_KEYDAT);
-	sprintf(s, "%02X", data);
-
-	boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 0, 16, 15, 31);
-	putfonts8_asc(binfo->vram, binfo->scrnx, 0, 16, col_white, s);
+	fifo8_put(&keyfifo, data);
+	
 	return;
 }
 

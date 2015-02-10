@@ -16,6 +16,7 @@ void io_hlt(void);
 void io_cli(void);
 void io_sti(void);
 void io_out8(int port, int data);
+unsigned char io_in8(int port);
 int io_load_eflags(void);
 void io_store_eflags(int eflags);
 void load_gdtr(int limit, int addr);
@@ -50,6 +51,12 @@ void putblock8_8(char *vram, int vxsize, int pxsize,
 #define COL8_840084		13
 #define COL8_008484		14
 #define COL8_848484		15
+
+enum  COLOR{
+	col_black, col_red, col_green, col_yellow, col_blue, col_pul,
+	col_blue_l, col_white, col_gray, col_red_d, col_green_d,
+	col_yellow_d, col_blue_d, col_pul_d, col_blue_l_d, col_gray_d
+};
 
 /* dsctbl.c */
 struct SEGMENT_DESCRIPTOR {
@@ -95,10 +102,13 @@ void inthandler2c(int *esp);
 
 #define PORT_KEYDAT		0x0060
 
-enum  COLOR{
-	col_black, col_red, col_green, col_yellow, col_blue, col_pul,
-	col_blue_l, col_white, col_gray, col_red_d, col_green_d,
-	col_yellow_d, col_blue_d, col_pul_d, col_blue_l_d, col_gray_d
+#define KEYBUF_LEN 32
+struct KEYBUF
+{
+	unsigned char data[KEYBUF_LEN];
+	int next_r, next_w, len;
 };
+
+#include "fifo.h"
 
 #endif

@@ -2,7 +2,8 @@
 
 #include "head.h"
 
-
+extern struct KEYBUF keybuf;
+struct FIFO8 keyfifo;
 void HariMain(void){
 	char *vram;	
 	int xsize, ysize;
@@ -10,11 +11,18 @@ void HariMain(void){
 
 	char mcursor[16*8];
 	char s[30];
+	unsigned char data;
 
+	char keybuf[KEYBUF_LEN];
+	
+	fifo8_init(&keyfifo, KEYBUF_LEN, keybuf);
+	
 	binfo = (struct BOOTINFO*) ADR_BOOTINFO;
 	xsize = binfo->scrnx;
 	ysize = binfo->scrny;
 	vram  = binfo->vram;
+
+
 
 
 	init_gdtidt();
@@ -39,7 +47,19 @@ void HariMain(void){
 	io_out8(PIC1_IMR, 0xef); /* ƒ}ƒEƒX‚ð‹–‰Â(11101111) */
 
 	for( ; ; )
-		io_hlt();	
+	{
+		io_cli();
+		if(fifo8_status(&keyfifo) == 0)
+			io_stihlt();
+		else{
+			data = fifo8_get(&keyfifo);
+			io_sti();
+			sprintf(s, "%02X", data);
+			boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 0, 16, 15, 31);
+			putfonts8_asc(binfo->vram, binfo->scrnx, 0, 16, col_white, s);
+		}
+	}
+		// io_hlt();	
 }
 // 14, 8,7,8,7,7,15,15,0,0,15,15,7,7
 
