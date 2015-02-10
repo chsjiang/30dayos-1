@@ -38,6 +38,9 @@ void init_gdtidt(void)
 	set_gatedesc(idt + 0x21, (int) asm_inthandler21, 2 * 8, AR_INTGATE32);
 	set_gatedesc(idt + 0x27, (int) asm_inthandler27, 2 * 8, AR_INTGATE32);
 	set_gatedesc(idt + 0x2c, (int) asm_inthandler2c, 2 * 8, AR_INTGATE32);
+	// the 2 in 2*8 means that this function belongs to section 2 
+	//which we set above: set_segmdesc(gdt + 2, 0x0007ffff, 0x00280000, 0x409a);
+	//                                      LIMIT_BOTPAK, ADR_BOTPAK, AR_CODE32_ER
 
 
 	return;
