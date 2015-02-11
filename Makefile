@@ -17,16 +17,16 @@ MAKEFONT = $(TOOLPATH)/makefont
 GOLIB = $(TOOLPATH)/golib00
 ASM2NASMFONT=$(TOOLPATH)/make_asm_font
 
-
-
 #默认值
 
 default :
 	$(MAKE) run
 
-
 #一般规则
 %.gas : %.c %.h head.h Makefile
+	$(CC1) -o $*.gas $*.c
+
+%.gas : %.c head.h Makefile
 	$(CC1) -o $*.gas $*.c
 
 %.nas : %.gas Makefile

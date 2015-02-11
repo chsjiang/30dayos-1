@@ -18,8 +18,8 @@ int fifo8_put(struct FIFO8 *fifo, unsigned char data){
 	}
 	fifo->buf[fifo->nw] = data;
 	fifo->nw++;
-	if(fifo->nw == fifo->size)
-		fifo->nw == 0;
+	if(fifo->nw >= fifo->size)
+		fifo->nw = 0;
 	fifo->free--;
 	return 0;
 }
