@@ -135,9 +135,9 @@ void HariMain(void){
 					if((mdec.btn & 0x01) != 0)
 						s[1] = 'L';
 					if((mdec.btn & 0x02) != 0)
-						s[1] = 'C';
+						s[2] = 'R';
 					if((mdec.btn & 0x04) != 0)
-						s[1] = 'R';
+						s[3] = 'C';
 
 					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 32, 16, 32 + 15*8-1, 31);
 					putfonts8_asc(binfo->vram, binfo->scrnx, 32, 16, col_white, s);
