@@ -6,6 +6,7 @@
 struct FIFO8 keyfifo;
 struct FIFO8 mousefifo;
 
+struct MOUSE_DEC mdec;
 
 void wait_KBC_sendready(void){
 	for(;;){
@@ -23,12 +24,47 @@ void init_keyboard(void){
 	return;
 }
 
-void enable_mouse(void){
+void enable_mouse(struct MOUSE_DEC *mdec){
 	wait_KBC_sendready();
 	io_out8(PORT_KEYCMD, KEYCMD_SENDTO_MOUSE);
 	wait_KBC_sendready();
 	io_out8(PORT_KEYDAT, MOUSECMD_ENABLE);
+	mdec->phase=0;
 	return;
+}
+
+int mouse_decode(struct MOUSE_DEC *mdec, int data){
+	if(mdec->phase == 0){
+		if(data == 0xfa)
+			mdec->phase = 1;
+		return 0;
+	}else if(mdec->phase == 1){
+		if((data & 0xc8) == 0x08){
+			mdec->buf[0] = data;
+			mdec->phase = 2;
+		}
+		return 0;
+	}else if(mdec->phase == 2){
+		mdec->buf[1] = data;
+		mdec->phase = 3;
+		return 0;
+	}else if(mdec->phase == 3){
+		mdec->buf[2] = data;
+		mdec->phase = 1;
+
+		mdec->btn = mdec->buf[0] & 0x07;
+		mdec->x = mdec->buf[1];
+		mdec->y = mdec->buf[2];
+
+		if((mdec->buf[0] & 0x10)  != 0)
+			mdec->x |= 0xffffff00;
+		if((mdec->buf[0] & 0x20)  != 0)
+			mdec->y |= 0xffffff00;
+		mdec->y = -mdec->y;
+
+		return 1;	
+	}
+	return -1;
 }
 
 void HariMain(void){
@@ -76,7 +112,7 @@ void HariMain(void){
 	io_out8(PIC1_IMR, 0xef); /* ƒ}ƒEƒX‚ð‹–‰Â(11101111) */
 
 	init_keyboard();
-	enable_mouse();
+	enable_mouse(&mdec);
 	for( ; ; )
 	{
 		io_cli();
@@ -94,11 +130,20 @@ void HariMain(void){
 			if(fifo8_status(&mousefifo) != 0){
 				data = fifo8_get(&mousefifo);
 				io_sti();
-				sprintf(s, "%02X", data);
-				boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 32, 16, 47, 31);
-				putfonts8_asc(binfo->vram, binfo->scrnx, 32, 16, col_white, s);
-			}
-			
+				if(mouse_decode(&mdec, data) == 1){
+					sprintf(s, "[lcr %4d %4d]", mdec.x, mdec.y);
+					if((mdec.btn & 0x01) != 0)
+						s[1] = 'L';
+					if((mdec.btn & 0x02) != 0)
+						s[1] = 'C';
+					if((mdec.btn & 0x04) != 0)
+						s[1] = 'R';
+
+					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 32, 16, 32 + 15*8-1, 31);
+					putfonts8_asc(binfo->vram, binfo->scrnx, 32, 16, col_white, s);
+				}
+
+			}	
 		}
 	}
 		// io_hlt();	

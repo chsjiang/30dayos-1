@@ -115,4 +115,11 @@ void inthandler2c(int *esp);
 
 #include "fifo.h"
 
+struct MOUSE_DEC
+{
+	int buf[3], phase;
+	unsigned char btn;
+	int x, y;
+};
+
 #endif
