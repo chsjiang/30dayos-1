@@ -120,6 +120,7 @@ struct MOUSE_DEC
 	int buf[3], phase;
 	unsigned char btn;
 	int x, y;
+	int mx, my;
 };
 
 #endif

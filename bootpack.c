@@ -30,6 +30,9 @@ void enable_mouse(struct MOUSE_DEC *mdec){
 	wait_KBC_sendready();
 	io_out8(PORT_KEYDAT, MOUSECMD_ENABLE);
 	mdec->phase=0;
+	mdec->mx=0;
+	mdec->my=0;
+
 	return;
 }
 
@@ -141,6 +144,18 @@ void HariMain(void){
 
 					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 32, 16, 32 + 15*8-1, 31);
 					putfonts8_asc(binfo->vram, binfo->scrnx, 32, 16, col_white, s);
+					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, mdec.mx, mdec.my, mdec.mx+8, mdec.my+16);
+					mdec.mx += mdec.x;
+					mdec.my += mdec.y;
+					if(mdec.mx < 0)
+						mdec.mx = 0;
+					else if(mdec.mx >= xsize - 1)
+						mdec.mx = xsize - 1;
+					if(mdec.my < 0)
+						mdec.my = 0;
+					else if(mdec.my >= ysize - 1)
+						mdec.my = ysize - 1;
+					putblock8_8(binfo->vram, binfo->scrnx, 8, 16, mdec.mx, mdec.my, mcursor, 8);
 				}
 
 			}	
