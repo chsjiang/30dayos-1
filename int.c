@@ -1,5 +1,6 @@
-#include "head.h"
-
+#include "input.h"
+#include "io.h"
+#include "fifo.h"
 
 extern struct FIFO8 keyfifo;
 extern struct FIFO8 mousefifo;
@@ -21,8 +22,6 @@ void init_pic(void)
 
 	io_out8(PIC0_IMR, 0xfb);
 	io_out8(PIC1_IMR, 0xff);
-
-	// keybuf.next_r = keybuf.next_w = keybuf.len = 0;
 
 	return;
 }

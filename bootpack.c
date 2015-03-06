@@ -1,74 +1,20 @@
 #include <stdio.h>
 
 #include "head.h"
+#include "input.h"
+#include "io.h"
+#include "fifo.h"
+#include "graphic.h"
+#include "mem.h"
 
 
 struct FIFO8 keyfifo;
 struct FIFO8 mousefifo;
-
 struct MOUSE_DEC mdec;
 
-void wait_KBC_sendready(void){
-	for(;;){
-		if( (io_in8(PORT_KEYSTA) & KEYSTA_SEND_NOTREADY) == 0)
-			break;
-	}
-	return;
-}
 
-void init_keyboard(void){
-	wait_KBC_sendready();
-	io_out8(PORT_KEYCMD, KEYCMD_WRITE_MODE);
-	wait_KBC_sendready();
-	io_out8(PORT_KEYDAT, KBC_MODE);
-	return;
-}
-
-void enable_mouse(struct MOUSE_DEC *mdec){
-	wait_KBC_sendready();
-	io_out8(PORT_KEYCMD, KEYCMD_SENDTO_MOUSE);
-	wait_KBC_sendready();
-	io_out8(PORT_KEYDAT, MOUSECMD_ENABLE);
-	mdec->phase=0;
-	mdec->mx=0;
-	mdec->my=0;
-
-	return;
-}
-
-int mouse_decode(struct MOUSE_DEC *mdec, int data){
-	if(mdec->phase == 0){
-		if(data == 0xfa)
-			mdec->phase = 1;
-		return 0;
-	}else if(mdec->phase == 1){
-		if((data & 0xc8) == 0x08){
-			mdec->buf[0] = data;
-			mdec->phase = 2;
-		}
-		return 0;
-	}else if(mdec->phase == 2){
-		mdec->buf[1] = data;
-		mdec->phase = 3;
-		return 0;
-	}else if(mdec->phase == 3){
-		mdec->buf[2] = data;
-		mdec->phase = 1;
-
-		mdec->btn = mdec->buf[0] & 0x07;
-		mdec->x = mdec->buf[1];
-		mdec->y = mdec->buf[2];
-
-		if((mdec->buf[0] & 0x10)  != 0)
-			mdec->x |= 0xffffff00;
-		if((mdec->buf[0] & 0x20)  != 0)
-			mdec->y |= 0xffffff00;
-		mdec->y = -mdec->y;
-
-		return 1;	
-	}
-	return -1;
-}
+char mem_map[MEM_MAX]; //32768=128M/4k
+struct MEMMAN mem_man;
 
 void HariMain(void){
 	char *vram;	
@@ -82,6 +28,11 @@ void HariMain(void){
 	char keybuf[KEYBUF_LEN];
 	char mousebuf[MOUSEBUF_LEN];
 	
+	//前4M为保留空间，如果内存小于4M本系统讲无法运行
+	unsigned int mem_size = memtest(0x00400000, 0xbfffffff) / 0x1000;
+
+
+
 	fifo8_init(&keyfifo, KEYBUF_LEN, keybuf);
 	fifo8_init(&mousefifo, MOUSEBUF_LEN, mousebuf);
 
@@ -90,27 +41,28 @@ void HariMain(void){
 	ysize = binfo->scrny;
 	vram  = binfo->vram;
 
-
-
-
 	init_gdtidt();
 	init_pic();
 	io_sti();
 
 	init_palette();
-
 	init_screen8(vram, xsize, ysize);
 
-	
 	putfonts8_asc(binfo->vram, binfo->scrnx, 8, 8, col_white, "Hello World");
 	init_mouse_cursor8(mcursor, col_blue_l_d);
-	putblock8_8(binfo->vram, binfo->scrnx, 8, 16, 32, 32, mcursor, 8);
-
-
+//	putblock8_8(binfo->vram, binfo->scrnx, 8, 16, 32, 32, mcursor, 8);
 
 	sprintf(s, "*scrnx = %d", binfo->scrnx);
-	putfonts8_asc(binfo->vram, binfo->scrnx, 16, 64, col_white, s);
+	putfonts8_asc(binfo->vram, binfo->scrnx, 16, 40, col_white, s);
 	
+	mem_init(&mem_man, mem_map, mem_size);
+	//内存总数
+	sprintf(s, "memory : %d * 4K", mem_man.total);
+	putfonts8_asc(binfo->vram, binfo->scrnx, 16, 56, col_white, s);
+	//内存剩余量以4K为单位
+	sprintf(s, "free: %08X pages", mem_man.frees);
+	putfonts8_asc(binfo->vram, binfo->scrnx, 16, 72, col_white, s);
+
 	io_out8(PIC0_IMR, 0xf9); /* PIC1‚ÆƒL[ƒ{[ƒh‚ð‹–‰Â(11111001) */
 	io_out8(PIC1_IMR, 0xef); /* ƒ}ƒEƒX‚ð‹–‰Â(11101111) */
 
@@ -126,8 +78,8 @@ void HariMain(void){
 				data = fifo8_get(&keyfifo);
 				io_sti();
 				sprintf(s, "%02X", data);
-				boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 0, 16, 15, 31);
-				putfonts8_asc(binfo->vram, binfo->scrnx, 0, 16, col_white, s);
+				boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 0, 24, 15, 40-1);
+				putfonts8_asc(binfo->vram, binfo->scrnx, 0, 24, col_white, s);
 			}
 
 			if(fifo8_status(&mousefifo) != 0){
@@ -141,9 +93,11 @@ void HariMain(void){
 						s[2] = 'C';
 					if((mdec.btn & 0x04) != 0)
 						s[3] = 'R';
-
-					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 32, 16, 32 + 15*8-1, 31);
-					putfonts8_asc(binfo->vram, binfo->scrnx, 32, 16, col_white, s);
+					//擦掉文字
+					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 32, 24, 32 + 15*8-1, 40-1);
+					//新的文字
+					putfonts8_asc(binfo->vram, binfo->scrnx, 32, 24, col_white, s);
+					//擦掉原来的鼠标
 					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, mdec.mx, mdec.my, mdec.mx+8, mdec.my+16);
 					mdec.mx += mdec.x;
 					mdec.my += mdec.y;
@@ -155,17 +109,11 @@ void HariMain(void){
 						mdec.my = 0;
 					else if(mdec.my >= ysize - 1)
 						mdec.my = ysize - 1;
+					//更新鼠标
 					putblock8_8(binfo->vram, binfo->scrnx, 8, 16, mdec.mx, mdec.my, mcursor, 8);
 				}
 
 			}	
 		}
 	}
-		// io_hlt();	
 }
-// 14, 8,7,8,7,7,15,15,0,0,15,15,7,7
-
-// col_white, col_gray
-// col_black
-// col_blue_l_d, col_gray_d
-

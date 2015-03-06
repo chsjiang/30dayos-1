@@ -57,9 +57,10 @@ bin/asmfont.obj : bin/asmfont.nas.font Makefile
 ####################################################################
 
 bin/bootpack.bim : bin/bootpack.obj bin/naskfunc.obj bin/asmfont.obj bin/graphic.obj bin/dsctbl.obj bin/int.obj \
-		bin/fifo.obj Makefile
+		bin/fifo.obj bin/input.obj bin/mem.obj Makefile
 	$(OBJ2BIM) @$(RULEFILE) out:bin/bootpack.bim stack:3136k map:bin/bootpack.map \
-		bin/bootpack.obj bin/naskfunc.obj bin/asmfont.obj bin/graphic.obj bin/dsctbl.obj bin/int.obj bin/fifo.obj
+		bin/bootpack.obj bin/naskfunc.obj bin/asmfont.obj bin/graphic.obj bin/dsctbl.obj bin/int.obj bin/fifo.obj \
+		bin/input.obj bin/mem.obj 
 # 3MB+64KB=3136KB
 
 bin/bootpack.hrb : bin/bootpack.bim Makefile
@@ -83,7 +84,7 @@ img :
 
 run : bin
 	$(MAKE) img
-	qemu-system-x86_64 -drive file=bin/haribote.img,if=floppy
+	qemu-system-x86_64 -m 32 -drive file=bin/haribote.img,if=floppy 
 
 bin :
 	mkdir bin

@@ -14,7 +14,9 @@
 		GLOBAL		_io_out8, _io_out16, _io_out32
 		GLOBAL		_io_load_eflags, _io_store_eflags
 		GLOBAL		_load_gdtr, _load_idtr
+		GLOBAL		_load_cr0, _store_cr0
 		GLOBAL 		_asm_inthandler21, _asm_inthandler27, _asm_inthandler2c
+		GLOBAL		_memtest_sub_nas
 		EXTERN 		_inthandler21, _inthandler27, _inthandler2c
 [SECTION .text]
 
@@ -77,6 +79,7 @@ _io_load_eflags:		;int io_load_eflags(void)
 		PUSHFD
 		POP		EAX
 		RET
+		
 _io_store_eflags:		;void io_store_eflags(int eflags)
 		MOV		EAX, [ESP + 4]
 		PUSH 	EAX
@@ -95,7 +98,13 @@ _load_idtr:		; void load_idtr(int limit, int addr);
 		LIDT	[ESP+6]
 		RET
 
-
+_load_cr0:		; int load_cr0();
+		MOV		EAX, CR0
+		RET
+_store_cr0:		; void store_cr0(int cr0);
+		MOV		EAX, [ESP+4]
+		MOV 	CR0, EAX
+		RET
 
 
 _asm_inthandler21:
@@ -144,4 +153,41 @@ _asm_inthandler2c:
 		POPAD
 		POP		DS
 		POP		ES
-		IRETD
+		IRETD 
+		
+_memtest_sub_nas: 	;unsigned int memtest_sub(uint start, uint end);
+		push edi
+		push esi
+		push ebx
+		mov esi, 0xaa55aa55
+		mov edi, 0x55aa55aa		
+		MOV		EAX, [ESP+ 12 + 4] ; get start
+mts_loop:
+		mov ebx, eax
+		add ebx, 0xffc
+		mov edx, [ebx]
+		mov [ebx], esi
+		xor dword [ebx], 0xffffffff
+		cmp [ebx], edi
+		jne mts_fin
+		xor dword [ebx], 0xffffffff
+		cmp [ebx], esi
+		jne mts_fin
+		mov [ebx], edx
+		add eax, 0x1000
+		cmp eax, [esp+12+8]
+		
+		jbe mts_loop
+		pop ebx
+		pop esi
+		pop edi
+		ret
+mts_fin:
+		mov [ebx], edx
+		pop ebx
+		pop esi
+		pop edi
+		ret
+		
+		
+		

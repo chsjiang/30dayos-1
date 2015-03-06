@@ -1,4 +1,5 @@
-#include "head.h"
+#include "graphic.h"
+#include "io.h"
 
 
 void init_mouse_cursor8(char *mouse, char background)
