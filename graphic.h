@@ -41,6 +41,35 @@ enum  COLOR{
 	col_yellow_d, col_blue_d, col_pul_d, col_blue_l_d, col_gray_d
 };
 
-
-
+/*
+ * Display
+ */
+struct SHEET{
+	unsigned char *buf;
+	int bxsize, bysize, vx0, vy0, col_inv;
+	int status;
+	struct SHEET *pre, *next;
+};
+#define MAX_SHEETS	256
+#define SHEET_USE 	1
+struct SHTCTL{
+	unsigned char *vram;
+	int xsize, ysize;
+	struct SHEET *nil;
+	struct MEMMAN *mem_man;
+};
+struct SHTCTL* shtctl_init(struct MEMMAN *mem_man, \
+		unsigned char *vram, int xsize, int ysize);
+struct SHEET* sheet_alloc(struct SHTCTL *ctl);
+void sheet_free(struct SHTCTL *ctl, struct SHEET *sht);
+void sheet_setbuf(struct SHEET *sht, unsigned char *buf,\
+		int xsize, int ysize, int col_inv);
+void sheet_updown(struct SHTCTL *ctl, struct SHEET *sht,\
+		int height);
+struct SHEET* sheet_top(struct SHTCTL *ctl);
+struct SHEET* sheet_bot(struct SHTCTL *ctl);
+void sheet_refresh(struct SHTCTL *ctl);
+void sheet_slide(struct SHTCTL *ctl, struct SHEET *sht,\
+		int vx0, int vy0);
+void putblock(char *vram, int vxsize, struct SHEET *sht);
 #endif /* GRAPHIC_H_ */

@@ -71,7 +71,8 @@ char mem_init(struct MEMMAN *mem_man, char *mem_map, unsigned int size){
 	return 0;
 }
 
-unsigned int memman_alloc_4k(struct MEMMAN *mem_man, unsigned int size){
+unsigned int memman_alloc_4k(struct MEMMAN *mem_man,\
+		unsigned int size){
 	int i = 0;
 	int start = -1;
 	int size4k = (size+0xfff) / 0x1000;
@@ -92,20 +93,21 @@ unsigned int memman_alloc_4k(struct MEMMAN *mem_man, unsigned int size){
 		for(i=start; i< start+size4k; i++)
 			mem_man->mem_map[i]=1;
 		mem_man->frees -= size4k;
-		return start;
+		return start*0x1000;
 	}
-	return -1;
+	return 0;
 }
 
-int memman_free_4k(struct MEMMAN *mem_man, unsigned int addr,\
-		unsigned int size)
+int memman_free_4k(struct MEMMAN *mem_man, \
+		unsigned int addr, unsigned int size)
 {
 	int i;
 	int size4k = (size+0xfff) / 0x1000;
-	for(i=addr; i<addr+size4k && i<mem_man->total; i++){
+	int addr4k = addr/0x1000;
+	for(i=addr4k; i<addr4k+size4k && i<mem_man->total; i++){
 		mem_man->mem_map[i] = 0;
 	}
-	mem_man->frees += i-addr;
+	mem_man->frees += i-addr4k;
 	return 1;
 }
 int mem_avl(struct MEMMAN *mem_man){

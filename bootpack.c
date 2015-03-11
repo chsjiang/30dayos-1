@@ -20,8 +20,6 @@ void HariMain(void){
 	char *vram;	
 	int xsize, ysize;
 	struct BOOTINFO *binfo;
-
-	char mcursor[16*8];
 	char s[30];
 	unsigned char data;
 
@@ -30,6 +28,7 @@ void HariMain(void){
 	
 	//前4M为保留空间，如果内存小于4M本系统讲无法运行
 	unsigned int mem_size = memtest(0x00400000, 0xbfffffff) / 0x1000;
+	mem_init(&mem_man, mem_map, mem_size);
 
 
 
@@ -45,29 +44,43 @@ void HariMain(void){
 	init_pic();
 	io_sti();
 
-	init_palette();
-	init_screen8(vram, xsize, ysize);
 
-	putfonts8_asc(binfo->vram, binfo->scrnx, 8, 8, col_white, "Hello World");
-	init_mouse_cursor8(mcursor, col_blue_l_d);
-//	putblock8_8(binfo->vram, binfo->scrnx, 8, 16, 32, 32, mcursor, 8);
-
-	sprintf(s, "*scrnx = %d", binfo->scrnx);
-	putfonts8_asc(binfo->vram, binfo->scrnx, 16, 40, col_white, s);
-	
-	mem_init(&mem_man, mem_map, mem_size);
-	//内存总数
-	sprintf(s, "memory : %d * 4K", mem_man.total);
-	putfonts8_asc(binfo->vram, binfo->scrnx, 16, 56, col_white, s);
-	//内存剩余量以4K为单位
-	sprintf(s, "free: %08X pages", mem_man.frees);
-	putfonts8_asc(binfo->vram, binfo->scrnx, 16, 72, col_white, s);
 
 	io_out8(PIC0_IMR, 0xf9); /* PIC1‚ÆƒL[ƒ{[ƒh‚ð‹–‰Â(11111001) */
 	io_out8(PIC1_IMR, 0xef); /* ƒ}ƒEƒX‚ð‹–‰Â(11101111) */
 
 	init_keyboard();
 	enable_mouse(&mdec);
+
+	init_palette();
+	char *buf_back, buf_mouse;
+	struct SHTCTL *shtctl = shtctl_init(&mem_man, \
+				binfo->vram, binfo->scrnx, binfo->scrny);
+	struct SHEET *sht_back, *sht_mouse;
+	sht_back = sheet_alloc(shtctl);
+	sht_mouse = sheet_alloc(shtctl);
+
+	buf_back = memman_alloc_4k(&mem_man, xsize*ysize);
+	buf_mouse = memman_alloc_4k(&mem_man, 8*16);
+
+	sheet_setbuf(sht_back, buf_back, xsize, ysize, -1);
+	init_screen8(buf_back, xsize, ysize);
+	putfonts8_asc(buf_back, xsize, 8, 8, col_white, "Hello World");
+	sprintf(s, "*scrnx = %d", xsize);
+	putfonts8_asc(buf_back, xsize, 16, 40, col_white, s);
+	//内存总数
+	sprintf(s, "memory : %d * 4K", mem_man.total);
+	putfonts8_asc(buf_back, xsize, 16, 56, col_white, s);
+	//内存剩余量以4K为单位
+	sprintf(s, "free: %08X pages", mem_man.frees);
+	putfonts8_asc(buf_back, xsize, 16, 72, col_white, s);
+	sheet_slide(shtctl, sht_back, 0, 0);
+
+	init_mouse_cursor8(buf_mouse, 99);
+//	putblock8_8(binfo->vram, binfo->scrnx, 8, 16, 32, 32, buf_mouse, 8);
+	sheet_setbuf(sht_mouse, buf_mouse, 8, 16, 99);
+	sheet_slide(shtctl, sht_mouse, 32, 32);
+
 	for( ; ; )
 	{
 		io_cli();
@@ -78,8 +91,8 @@ void HariMain(void){
 				data = fifo8_get(&keyfifo);
 				io_sti();
 				sprintf(s, "%02X", data);
-				boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 0, 24, 15, 40-1);
-				putfonts8_asc(binfo->vram, binfo->scrnx, 0, 24, col_white, s);
+				boxfill8(buf_back, binfo->scrnx, col_blue_l_d, 0, 24, 15, 40-1);
+				putfonts8_asc(buf_back, binfo->scrnx, 0, 24, col_white, s);
 			}
 
 			if(fifo8_status(&mousefifo) != 0){
@@ -94,11 +107,9 @@ void HariMain(void){
 					if((mdec.btn & 0x04) != 0)
 						s[3] = 'R';
 					//擦掉文字
-					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, 32, 24, 32 + 15*8-1, 40-1);
+					boxfill8(buf_back, binfo->scrnx, col_blue_l_d, 32, 24, 32 + 15*8-1, 40-1);
 					//新的文字
-					putfonts8_asc(binfo->vram, binfo->scrnx, 32, 24, col_white, s);
-					//擦掉原来的鼠标
-					boxfill8(binfo->vram, binfo->scrnx, col_blue_l_d, mdec.mx, mdec.my, mdec.mx+8, mdec.my+16);
+					putfonts8_asc(buf_back, binfo->scrnx, 32, 24, col_white, s);
 					mdec.mx += mdec.x;
 					mdec.my += mdec.y;
 					if(mdec.mx < 0)
@@ -109,11 +120,10 @@ void HariMain(void){
 						mdec.my = 0;
 					else if(mdec.my >= ysize - 1)
 						mdec.my = ysize - 1;
-					//更新鼠标
-					putblock8_8(binfo->vram, binfo->scrnx, 8, 16, mdec.mx, mdec.my, mcursor, 8);
+					sheet_slide(shtctl, sht_mouse, mdec.mx, mdec.my);
 				}
 
-			}	
+			}
 		}
 	}
 }
