@@ -110,6 +110,8 @@ void HariMain(void){
 					boxfill8(buf_back, binfo->scrnx, col_blue_l_d, 32, 24, 32 + 15*8-1, 40-1);
 					//新的文字
 					putfonts8_asc(buf_back, binfo->scrnx, 32, 24, col_white, s);
+
+					sheet_refreshsub(shtctl, 32, 24, 32+15*8-1, 40-1);
 					mdec.mx += mdec.x;
 					mdec.my += mdec.y;
 					if(mdec.mx < 0)
@@ -120,7 +122,8 @@ void HariMain(void){
 						mdec.my = 0;
 					else if(mdec.my >= ysize - 1)
 						mdec.my = ysize - 1;
-					sheet_slide(shtctl, sht_mouse, mdec.mx, mdec.my);
+					sheet_slide(shtctl, sht_mouse, \
+							mdec.mx, mdec.my);
 				}
 
 			}

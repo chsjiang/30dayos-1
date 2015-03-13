@@ -68,8 +68,13 @@ void sheet_updown(struct SHTCTL *ctl, struct SHEET *sht,\
 		int height);
 struct SHEET* sheet_top(struct SHTCTL *ctl);
 struct SHEET* sheet_bot(struct SHTCTL *ctl);
+void sheet_refreshsub(struct SHTCTL *ctl,\
+		int vx0, int vy0, int vx1, int vy1);
 void sheet_refresh(struct SHTCTL *ctl);
 void sheet_slide(struct SHTCTL *ctl, struct SHEET *sht,\
 		int vx0, int vy0);
+void putblocksub(char *vram, int vxsize, \
+		struct SHEET *sht, int vx0, int vy0, \
+		int vx1, int vy1);
 void putblock(char *vram, int vxsize, struct SHEET *sht);
 #endif /* GRAPHIC_H_ */

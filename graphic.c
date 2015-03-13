@@ -274,9 +274,25 @@ struct SHEET* sheet_bot(struct SHTCTL *ctl)
 }
 void putblock(char *vram, int vxsize, struct SHEET *sht)
 {
+	putblocksub(vram, vxsize, sht, 0, 0, \
+			sht->bxsize, sht->bysize);
+}
+void putblocksub(char *vram, int vxsize, \
+		struct SHEET *sht, int vx0, int vy0, \
+		int vx1, int vy1)
+{
 	int x, y, col;
-	for(x=0; x<sht->bxsize; x++){
-		for(y=0; y<sht->bysize; y++){
+	int bx0, bx1, by0, by1;
+	bx0 = vx0 - sht->vx0;
+	bx1 = vx1 - sht->vx0;
+	by0 = vy0 - sht->vy0;
+	by1 = vy1 - sht->vy0;
+	if(bx0 < 0) bx0 = 0;
+	if(bx1 > sht->bxsize) bx1 = sht->bxsize;
+	if(by0 < 0) by0 = 0;
+	if(by1 > sht->bysize) by1 = sht->bysize;
+	for(x=bx0; x<bx1; x++){
+		for(y=by0; y<by1; y++){
 			col = sht->buf[y*sht->bxsize+x];
 			if(col != sht->col_inv)
 				vram[(sht->vy0+y)*vxsize + (sht->vx0+x)]\
@@ -286,20 +302,44 @@ void putblock(char *vram, int vxsize, struct SHEET *sht)
 }
 void sheet_refresh(struct SHTCTL *ctl)
 {
-	struct SHEET *cur, *top;
-	cur = sheet_bot(ctl);
-	if(cur != ctl->nil){
+	struct SHEET *sht;
+	sht = sheet_bot(ctl);
+	if(sht != ctl->nil){
 		do{
-			putblock(ctl->vram, ctl->xsize, cur);
-			cur = cur->next;
-		}while(cur != ctl->nil);
+			putblock(ctl->vram, ctl->xsize, sht);
+			sht = sht->next;
+		}while(sht != ctl->nil);
+	}
+}
+void sheet_refreshsub(struct SHTCTL *ctl,\
+		int vx0, int vy0, int vx1, int vy1)
+{
+	struct SHEET *sht;
+	sht = sheet_bot(ctl);
+	if(sht != ctl->nil){
+		do{
+			if(vx0 < 0) vx0 = 0;
+			if(vx1 > ctl->xsize)vx1=ctl->xsize;
+			if(vy0 < 0) vy0=0;
+			if(vy1 > ctl->ysize)vy1=ctl->ysize;
+
+			putblocksub(ctl->vram, ctl->xsize, sht, \
+					vx0, vy0, vx1, vy1);
+			sht = sht->next;
+		}while(sht != ctl->nil);
 	}
 }
 
 void sheet_slide(struct SHTCTL *ctl, struct SHEET *sht,\
 		int vx0, int vy0)
 {
+	int vx0_old, vy0_old;
+	vx0_old = sht->vx0;
+	vy0_old = sht->vy0;
 	sht->vx0 = vx0;
 	sht->vy0 = vy0;
-	sheet_refresh(ctl);
+	sheet_refreshsub(ctl, vx0_old, vy0_old, \
+			vx0_old+sht->bxsize, vy0_old+sht->bysize);
+	sheet_refreshsub(ctl, vx0, vy0, \
+			vx0+sht->bxsize, vy0+sht->bysize);
 }
