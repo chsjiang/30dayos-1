@@ -177,6 +177,14 @@ struct SHTCTL* shtctl_init(struct MEMMAN *mem_man, \
 			sizeof(struct SHTCTL));
 	if(ctl == 0) goto err;
 
+	ctl->map = (unsigned char*)memman_alloc_4k(mem_man,\
+			xsize*ysize);
+	if(ctl->map == 0){
+		memman_free_4k(ctl->mem_man, ctl, \
+				sizeof(struct SHTCTL));
+		goto err;
+	}
+
 	ctl->mem_man = mem_man;
 	ctl->vram = vram;
 	ctl->xsize = xsize;
@@ -184,6 +192,7 @@ struct SHTCTL* shtctl_init(struct MEMMAN *mem_man, \
 	ctl->nil = nil;
 	nil->next = nil;
 	nil->pre = nil;
+	ctl->id_next = 0;
 err:
 	return ctl;
 }
@@ -203,6 +212,7 @@ struct SHEET* sheet_alloc(struct SHTCTL *ctl)
 	sht->pre = nil->pre;
 	nil->pre = sht;
 	sht->ctl = ctl;
+	sht->id = ctl->id_next++;
 err:
 	return sht;
 }
@@ -287,6 +297,33 @@ void putblocksub(char *vram, int vxsize, \
 {
 	int x, y, col;
 	int bx0, bx1, by0, by1;
+	char *map;
+	int index;
+	bx0 = vx0 - sht->vx0;
+	bx1 = vx1 - sht->vx0;
+	by0 = vy0 - sht->vy0;
+	by1 = vy1 - sht->vy0;
+	if(bx0 < 0) bx0 = 0;
+	if(bx1 > sht->bxsize) bx1 = sht->bxsize;
+	if(by0 < 0) by0 = 0;
+	if(by1 > sht->bysize) by1 = sht->bysize;
+	map = sht->ctl->map;
+	for(x=bx0; x<bx1; x++){
+		for(y=by0; y<by1; y++){
+			col = sht->buf[y*sht->bxsize+x];
+			index = (sht->vy0+y)*vxsize + (sht->vx0+x);
+			if(col != sht->col_inv && \
+					map[index] == sht->id)
+				vram[index] = col;
+		}
+	}
+}
+void putblock_map(char *map, int vxsize, \
+		struct SHEET *sht, int vx0, int vy0, \
+		int vx1, int vy1)
+{
+	int x, y, col;
+	int bx0, bx1, by0, by1;
 	bx0 = vx0 - sht->vx0;
 	bx1 = vx1 - sht->vx0;
 	by0 = vy0 - sht->vy0;
@@ -299,8 +336,8 @@ void putblocksub(char *vram, int vxsize, \
 		for(y=by0; y<by1; y++){
 			col = sht->buf[y*sht->bxsize+x];
 			if(col != sht->col_inv)
-				vram[(sht->vy0+y)*vxsize + (sht->vx0+x)]\
-				= col;
+				map[(sht->vy0+y)*vxsize + (sht->vx0+x)]\
+				= sht->id;
 		}
 	}
 }
@@ -336,6 +373,27 @@ void sheet_refreshsub(struct SHEET *sht,\
 	}
 }
 
+void sheet_refreshmap(struct SHEET *sht,\
+		int vx0, int vy0, int vx1, int vy1)
+{
+	struct SHTCTL *ctl;
+	ctl = sht->ctl;
+	if(sht != ctl->nil){
+		do{
+			if(vx0 < 0) vx0 = 0;
+			if(vx1 > ctl->xsize)vx1=ctl->xsize;
+			if(vy0 < 0) vy0=0;
+			if(vy1 > ctl->ysize)vy1=ctl->ysize;
+
+			if(sht->status == ENABLE_SHEET)
+				putblock_map(ctl->map, ctl->xsize,\
+						sht, vx0, vy0, vx1, vy1);
+			sht = sht->next;
+		}while(sht != ctl->nil);
+	}
+}
+
+
 void sheet_slide(struct SHEET *sht,	int vx0, int vy0)
 {
 	struct SHTCTL *ctl = sht->ctl;
@@ -345,6 +403,10 @@ void sheet_slide(struct SHEET *sht,	int vx0, int vy0)
 	sht->vx0 = vx0;
 	sht->vy0 = vy0;
 	struct SHEET *bot = sheet_bot(ctl);
+	sheet_refreshmap(bot, vx0_old, vy0_old, \
+				vx0_old+sht->bxsize, vy0_old+sht->bysize);
+	sheet_refreshmap(sht, vx0, vy0, \
+				vx0+sht->bxsize, vy0+sht->bysize);
 	sheet_refreshsub(bot, vx0_old, vy0_old, \
 			vx0_old+sht->bxsize, vy0_old+sht->bysize);
 	sheet_refreshsub(sht, vx0, vy0, \

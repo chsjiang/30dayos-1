@@ -51,6 +51,7 @@ struct SHEET{
 	int status;
 	struct SHEET *pre, *next;
 	struct SHTCTL *ctl;
+	int id;
 };
 #define MAX_SHEETS	256
 #define SHEET_USE 	1
@@ -59,10 +60,11 @@ struct SHEET{
 #define DISABLE_SHEET -1
 
 struct SHTCTL{
-	unsigned char *vram;
+	unsigned char *vram, *map;
 	int xsize, ysize;
 	struct SHEET *nil;
 	struct MEMMAN *mem_man;
+	int id_next;
 };
 struct SHTCTL* shtctl_init(struct MEMMAN *mem_man, \
 		unsigned char *vram, int xsize, int ysize);
@@ -87,6 +89,8 @@ void sheet_enable(struct SHEET *sht, int enable);
 
 void make_window8(char *buf, int xsize, \
 		int ysize, char * title);
-
+void putblock_map(char *map, int vxsize, \
+		struct SHEET *sht, int vx0, int vy0, \
+		int vx1, int vy1);
 
 #endif /* GRAPHIC_H_ */
