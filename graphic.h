@@ -74,7 +74,7 @@ void sheet_updown(struct SHEET *sht,\
 		int height);
 struct SHEET* sheet_top(struct SHTCTL *ctl);
 struct SHEET* sheet_bot(struct SHTCTL *ctl);
-void sheet_refreshsub(struct SHTCTL *ctl,\
+void sheet_refreshsub(struct SHEET *sht,\
 		int vx0, int vy0, int vx1, int vy1);
 void sheet_refresh(struct SHTCTL *ctl);
 void sheet_slide(struct SHEET *sht,\

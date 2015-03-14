@@ -89,12 +89,19 @@ void HariMain(void){
 	sheet_setbuf(sht_window, buf_window, 160, 68, -1);
 	make_window8(buf_window, 160, 68, "window");
 	sheet_slide(sht_window, 80, 87);
-//	sheet_updown(sht_window,-1);
+	sheet_updown(sht_window, -1);
+	unsigned int count=0;
 	for( ; ; )
 	{
+		count++;
+		sprintf(s, "%010d", count);
+		boxfill8(buf_window, 160, col_gray, 40, 28, 119, 43);
+		putfonts8_asc(buf_window,160,40,28,col_white,s);
+		sheet_refreshsub(sht_window, 80+40, 87+28,80+120,87+44);
+
 		io_cli();
 		if(fifo8_status(&keyfifo) + fifo8_status(&mousefifo) == 0)
-			io_stihlt();
+			io_sti();
 		else{
 			if(fifo8_status(&keyfifo) != 0){
 				data = fifo8_get(&keyfifo);
@@ -115,12 +122,12 @@ void HariMain(void){
 						s[2] = 'C';
 					if((mdec.btn & 0x04) != 0)
 						s[3] = 'R';
-					//擦掉文字
-					boxfill8(buf_back, binfo->scrnx, col_blue_l_d, 32, 24, 32 + 15*8-1, 40-1);
-					//新的文字
-					putfonts8_asc(buf_back, binfo->scrnx, 32, 24, col_white, s);
-
-					sheet_refreshsub(shtctl, 32, 24, 32+15*8-1, 40-1);
+//					//擦掉文字
+//					boxfill8(buf_back, binfo->scrnx, col_blue_l_d, 32, 24, 32 + 15*8-1, 40-1);
+//					//新的文字
+//					putfonts8_asc(buf_back, binfo->scrnx, 32, 24, col_white, s);
+//
+//					sheet_refreshsub(sht_back, 32, 24, 32+15*8-1, 40-1);
 					mdec.mx += mdec.x;
 					mdec.my += mdec.y;
 					if(mdec.mx < 0)

@@ -315,11 +315,12 @@ void sheet_refresh(struct SHTCTL *ctl)
 		}while(sht != ctl->nil);
 	}
 }
-void sheet_refreshsub(struct SHTCTL *ctl,\
+void sheet_refreshsub(struct SHEET *sht,\
 		int vx0, int vy0, int vx1, int vy1)
 {
-	struct SHEET *sht;
-	sht = sheet_bot(ctl);
+	struct SHTCTL *ctl;
+	ctl = sht->ctl;
+//	sht = sheet_bot(ctl);
 	if(sht != ctl->nil){
 		do{
 			if(vx0 < 0) vx0 = 0;
@@ -343,9 +344,10 @@ void sheet_slide(struct SHEET *sht,	int vx0, int vy0)
 	vy0_old = sht->vy0;
 	sht->vx0 = vx0;
 	sht->vy0 = vy0;
-	sheet_refreshsub(ctl, vx0_old, vy0_old, \
+	struct SHEET *bot = sheet_bot(ctl);
+	sheet_refreshsub(bot, vx0_old, vy0_old, \
 			vx0_old+sht->bxsize, vy0_old+sht->bysize);
-	sheet_refreshsub(ctl, vx0, vy0, \
+	sheet_refreshsub(sht, vx0, vy0, \
 			vx0+sht->bxsize, vy0+sht->bysize);
 }
 
