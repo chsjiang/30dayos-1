@@ -168,7 +168,7 @@ void init_screen8(char *vram, int xsize, int ysize)
 struct SHTCTL* shtctl_init(struct MEMMAN *mem_man, \
 		unsigned char *vram, int xsize, int ysize)
 {
-	struct SHTCTL *ctl;
+	struct SHTCTL *ctl = 0;
 	struct SHEET *nil;
 	nil = (struct SHEET*)memman_alloc_4k(mem_man, \
 			sizeof(struct SHEET));
@@ -192,7 +192,8 @@ struct SHEET* sheet_alloc(struct SHTCTL *ctl)
 {
 	struct SHEET *sht, *nil;
 	nil = ctl->nil;
-	sht = memman_alloc_4k(ctl->mem_man, sizeof(struct SHEET));
+	sht = (struct SHEET*)memman_alloc_4k(ctl->mem_man,\
+			sizeof(struct SHEET));
 	if(sht == 0)
 		goto err;
 	sht->status = -1;
@@ -201,18 +202,21 @@ struct SHEET* sheet_alloc(struct SHTCTL *ctl)
 	sht->next = nil;
 	sht->pre = nil->pre;
 	nil->pre = sht;
+	sht->ctl = ctl;
 err:
 	return sht;
 }
 
-void sheet_free(struct SHTCTL *ctl, struct SHEET *sht)
+void sheet_free(struct SHEET *sht)
 {
 	struct SHEET *pre, *next;
+	struct MEMMAN *mem_man = sht->ctl->mem_man;
 	pre = sht->pre;
 	next = sht->next;
 	pre->next = next;
 	next->pre = pre;
-	memman_free_4k(ctl->mem_man, sht, sizeof(struct SHEET));
+	memman_free_4k(mem_man,(unsigned int)sht,\
+			sizeof(struct SHEET));
 	return;
 }
 
@@ -225,10 +229,10 @@ void sheet_setbuf(struct SHEET *sht, unsigned char *buf,\
 	sht->col_inv = col_inv;
 }
 
-void sheet_updown(struct SHTCTL *ctl, struct SHEET *sht,\
-		int height)
+void sheet_updown(struct SHEET *sht, int height)
 {
 	struct SHEET *cur, *pre, *next;
+	struct SHTCTL *ctl = sht->ctl;
 	if(sht == 0 || height == 0)
 		return;
 	if(height > 0){
@@ -323,16 +327,17 @@ void sheet_refreshsub(struct SHTCTL *ctl,\
 			if(vy0 < 0) vy0=0;
 			if(vy1 > ctl->ysize)vy1=ctl->ysize;
 
-			putblocksub(ctl->vram, ctl->xsize, sht, \
+			if(sht->status == ENABLE_SHEET)
+				putblocksub(ctl->vram, ctl->xsize, sht, \
 					vx0, vy0, vx1, vy1);
 			sht = sht->next;
 		}while(sht != ctl->nil);
 	}
 }
 
-void sheet_slide(struct SHTCTL *ctl, struct SHEET *sht,\
-		int vx0, int vy0)
+void sheet_slide(struct SHEET *sht,	int vx0, int vy0)
 {
+	struct SHTCTL *ctl = sht->ctl;
 	int vx0_old, vy0_old;
 	vx0_old = sht->vx0;
 	vy0_old = sht->vy0;
@@ -342,4 +347,54 @@ void sheet_slide(struct SHTCTL *ctl, struct SHEET *sht,\
 			vx0_old+sht->bxsize, vy0_old+sht->bysize);
 	sheet_refreshsub(ctl, vx0, vy0, \
 			vx0+sht->bxsize, vy0+sht->bysize);
+}
+
+void make_window8(char *buf, int xsize, \
+		int ysize, char * title)
+{
+	static char closebtn[14][16] = {
+			"0000000000000003",
+			"0111111111111123",
+			"0111111111111123",
+			"0111331111331123",
+			"0111133113311123",
+			"0111113333111123",
+			"0111111331111123",
+			"0111113333111123",
+			"0111133113311123",
+			"0111331111331123",
+			"0111111111111123",
+			"0111111111111123",
+			"0222222222222223",
+			"3333333333333333"
+	};
+	int x, y;
+	char c;
+	boxfill8(buf, xsize, col_gray,  0, 0, xsize-1, 0);
+	boxfill8(buf, xsize, col_white, 1, 1, xsize-2, 1);
+	boxfill8(buf, xsize, col_gray, 0, 0, 0, ysize-1);
+	boxfill8(buf, xsize, col_white, 1, 1, 1, ysize-1);
+	boxfill8(buf, xsize, col_gray_d, xsize-2, 1, xsize-2, ysize-1);
+	boxfill8(buf, xsize, col_black, xsize-1, 0, xsize-1, ysize-1);
+	boxfill8(buf, xsize, col_gray, 2, 2, xsize-3, ysize-3);
+	boxfill8(buf, xsize, col_blue_d, 3, 3, xsize-4, 20);
+	boxfill8(buf, xsize, col_gray_d, 1, ysize-2, xsize-2, ysize-2);
+	boxfill8(buf, xsize, col_black, 0, ysize-1, xsize-1, ysize-1);
+	putfonts8_asc(buf, xsize, 24,4,col_white, title);
+
+	for(y=0; y<14; y++)
+		for(x=0;x<16;x++){
+			c=closebtn[y][x];
+			if(c=='3') c=col_black;
+			else if(c=='2') c=col_gray_d;
+			else if(c=='1') c=col_gray;
+			else c=col_white;
+			buf[(5+y)*xsize+(xsize-21+x)]=c;
+		}
+//	};
+
+}
+void sheet_enable(struct SHEET *sht, int enable)
+{
+	sht->status = enable;
 }

@@ -36,9 +36,10 @@ void putblock8_8(char *vram, int vxsize, int pxsize,
 #define COL8_848484		15
 
 enum  COLOR{
-	col_black, col_red, col_green, col_yellow, col_blue, col_pul,
-	col_blue_l, col_white, col_gray, col_red_d, col_green_d,
-	col_yellow_d, col_blue_d, col_pul_d, col_blue_l_d, col_gray_d
+	col_black, col_red, col_green, col_yellow, \
+	col_blue, col_pul, col_blue_l, col_white, \
+	col_gray, col_red_d, col_green_d, col_yellow_d,\
+	col_blue_d, col_pul_d, col_blue_l_d, col_gray_d
 };
 
 /*
@@ -49,9 +50,14 @@ struct SHEET{
 	int bxsize, bysize, vx0, vy0, col_inv;
 	int status;
 	struct SHEET *pre, *next;
+	struct SHTCTL *ctl;
 };
 #define MAX_SHEETS	256
 #define SHEET_USE 	1
+
+#define ENABLE_SHEET 1
+#define DISABLE_SHEET -1
+
 struct SHTCTL{
 	unsigned char *vram;
 	int xsize, ysize;
@@ -61,20 +67,26 @@ struct SHTCTL{
 struct SHTCTL* shtctl_init(struct MEMMAN *mem_man, \
 		unsigned char *vram, int xsize, int ysize);
 struct SHEET* sheet_alloc(struct SHTCTL *ctl);
-void sheet_free(struct SHTCTL *ctl, struct SHEET *sht);
+void sheet_free(struct SHEET *sht);
 void sheet_setbuf(struct SHEET *sht, unsigned char *buf,\
 		int xsize, int ysize, int col_inv);
-void sheet_updown(struct SHTCTL *ctl, struct SHEET *sht,\
+void sheet_updown(struct SHEET *sht,\
 		int height);
 struct SHEET* sheet_top(struct SHTCTL *ctl);
 struct SHEET* sheet_bot(struct SHTCTL *ctl);
 void sheet_refreshsub(struct SHTCTL *ctl,\
 		int vx0, int vy0, int vx1, int vy1);
 void sheet_refresh(struct SHTCTL *ctl);
-void sheet_slide(struct SHTCTL *ctl, struct SHEET *sht,\
+void sheet_slide(struct SHEET *sht,\
 		int vx0, int vy0);
 void putblocksub(char *vram, int vxsize, \
 		struct SHEET *sht, int vx0, int vy0, \
 		int vx1, int vy1);
 void putblock(char *vram, int vxsize, struct SHEET *sht);
+void sheet_enable(struct SHEET *sht, int enable);
+
+void make_window8(char *buf, int xsize, \
+		int ysize, char * title);
+
+
 #endif /* GRAPHIC_H_ */

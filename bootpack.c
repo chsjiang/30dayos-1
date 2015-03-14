@@ -53,15 +53,20 @@ void HariMain(void){
 	enable_mouse(&mdec);
 
 	init_palette();
-	char *buf_back, buf_mouse;
+	char *buf_back, *buf_mouse, *buf_window;
 	struct SHTCTL *shtctl = shtctl_init(&mem_man, \
 				binfo->vram, binfo->scrnx, binfo->scrny);
-	struct SHEET *sht_back, *sht_mouse;
+	struct SHEET *sht_back, *sht_mouse, *sht_window;
 	sht_back = sheet_alloc(shtctl);
 	sht_mouse = sheet_alloc(shtctl);
+	sht_window = sheet_alloc(shtctl);
 
-	buf_back = memman_alloc_4k(&mem_man, xsize*ysize);
-	buf_mouse = memman_alloc_4k(&mem_man, 8*16);
+	buf_back = (char*)memman_alloc_4k(&mem_man, xsize*ysize);
+	buf_mouse = (char*)memman_alloc_4k(&mem_man, 8*16);
+	buf_window= (char*)memman_alloc_4k(&mem_man, 160*68);
+	sheet_enable(sht_back, ENABLE_SHEET);
+	sheet_enable(sht_mouse, ENABLE_SHEET);
+	sheet_enable(sht_window, ENABLE_SHEET);
 
 	sheet_setbuf(sht_back, buf_back, xsize, ysize, -1);
 	init_screen8(buf_back, xsize, ysize);
@@ -74,13 +79,17 @@ void HariMain(void){
 	//内存剩余量以4K为单位
 	sprintf(s, "free: %08X pages", mem_man.frees);
 	putfonts8_asc(buf_back, xsize, 16, 72, col_white, s);
-	sheet_slide(shtctl, sht_back, 0, 0);
+	sheet_slide(sht_back, 0, 0);
 
 	init_mouse_cursor8(buf_mouse, 99);
 //	putblock8_8(binfo->vram, binfo->scrnx, 8, 16, 32, 32, buf_mouse, 8);
 	sheet_setbuf(sht_mouse, buf_mouse, 8, 16, 99);
-	sheet_slide(shtctl, sht_mouse, 32, 32);
+	sheet_slide(sht_mouse, 32, 32);
 
+	sheet_setbuf(sht_window, buf_window, 160, 68, -1);
+	make_window8(buf_window, 160, 68, "window");
+	sheet_slide(sht_window, 80, 87);
+//	sheet_updown(sht_window,-1);
 	for( ; ; )
 	{
 		io_cli();
@@ -122,7 +131,7 @@ void HariMain(void){
 						mdec.my = 0;
 					else if(mdec.my >= ysize - 1)
 						mdec.my = ysize - 1;
-					sheet_slide(shtctl, sht_mouse, \
+					sheet_slide(sht_mouse, \
 							mdec.mx, mdec.my);
 				}
 

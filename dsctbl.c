@@ -11,7 +11,6 @@ void load_idtr(int size, int base);
 void asm_inthandler21();
 void asm_inthandler2c();
 void asm_inthandler27();
-void init_pic(void);
 
 void init_gdtidt(void)
 {
